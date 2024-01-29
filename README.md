@@ -6,6 +6,7 @@ Open Snap Code - A free open source code editor written in Python using the TKin
 
 - pyyaml = 6.0.1
 - Python = 3.10 (recommended)
+- TKinter
 
 ## Note:
 

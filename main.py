@@ -1,12 +1,13 @@
 # libraries imports
 import ctypes
+import tempfile
 import yaml
 import re
 import os
 import keyboard
 import tkinter as tk
 from tkinter import filedialog
-from tkinter import ttk, messagebox
+from tkinter import ttk
 
 # root configure
 root = tk.Tk()
@@ -20,6 +21,9 @@ previousText = ''
 with open('settings.yaml', 'r', encoding='utf-8') as read_file:
     contents = yaml.safe_load(read_file)
     font_style = contents['font_style']
+    background_color = contents['background_color']
+    num_color = contents['num_color']
+    terminal = contents['terminal']
 
 filename = ''  # Define filename as a global variable
 undo_stack = []  # Stack to store previous states of the text
@@ -88,22 +92,18 @@ def search_re(pattern, text):
     return matches
 
 
-def rgb(rgb_colors):
-    """Function for detecting RGB colors"""
-    return "#%02x%02x%02x" % rgb_colors
+def run_code():
+    code = text.get("1.0", tk.END)  # Get the code from the text field
+    with tempfile.NamedTemporaryFile(suffix=".py", delete=False) as f:
+        f.write(code.encode())
+        fname = f.name
+        os.system(f'start {terminal} python {fname}')
 
 
 ctypes.windll.shcore.SetProcessDpiAwareness(True)
 
-normal = rgb((234, 234, 234))
-keywords = rgb((234, 95, 95))
-comments = rgb((95, 234, 165))
-string = rgb((234, 162, 95))
-function = rgb((95, 211, 234))
-background = rgb((42, 42, 42))
-toolbar_background = rgb((30, 30, 30))
-num_color = rgb((100, 100, 100))
-red = rgb((234, 95, 95))
+background = background_color
+num_color = num_color
 
 repl = [
     # Keywords
@@ -139,6 +139,7 @@ repl = [
     # Strings inside parentheses
     [r'\((.*?)\)', '#f1fa8c']
 ]
+
 # Line wrapping is disabled, otherwise the numbering will not work correctly
 numbers = tk.Text(root, width=4, bg='lightgray', state=tk.DISABLED,
                   relief=tk.FLAT, fg=num_color, font=font_style, background=background)
@@ -169,12 +170,16 @@ scroll.config(command=scroll_command)
 
 
 def insert_numbers():
-    count_of_lines = text.get(1.0, tk.END).count('\n') + 1
+    current_count_of_lines = text.get(1.0, tk.END).count('\n') + 1
+    current_numbers = numbers.get(1.0, tk.END).split(
+        '\n')[:-1]  # removing the last empty line
 
-    numbers.config(state=tk.NORMAL)
-    numbers.delete(1.0, tk.END)
-    numbers.insert(1.0, '\n'.join(map(str, range(1, count_of_lines))))
-    numbers.config(state=tk.DISABLED)
+    if len(current_numbers) != current_count_of_lines:
+        numbers.config(state=tk.NORMAL)
+        numbers.delete(1.0, tk.END)
+        numbers.insert(1.0, '\n'.join(
+            map(str, range(1, current_count_of_lines + 1))))
+        numbers.config(state=tk.DISABLED)
 
 
 insert_numbers()
@@ -211,6 +216,12 @@ def update_highlight_hotkey():
         changes()
 
 
+def run_code_hotkey():
+    # Check if the tkinter window is focused
+    if root.focus_displayof():
+        run_code()
+
+
 def main():
     keyboard.add_hotkey('ctrl+s', save_file_hotkey)  # save file hotkey
     # save as file hotkey
@@ -218,28 +229,32 @@ def main():
     keyboard.add_hotkey('ctrl+o', open_file_hotkey)  # open file hotkey
     # update syntax highlight hotkey
     keyboard.add_hotkey('ctrl+shift+p', update_highlight_hotkey)
+    # run code hotkey
+    keyboard.add_hotkey('f5', run_code)
     text.bind('<<Modified>>', on_edit)
 
-    # Создание тулбара
+    # Create the toolbar
     menubar = tk.Menu(root)
 
-    # Создание выпадающего меню "File"
+    # Create the "File" drop-down menu
     filemenu = tk.Menu(menubar, tearoff=0)
     filemenu.add_command(label="Open", command=open_file, accelerator="Ctrl+O")
     filemenu.add_command(label="Save", command=save_file, accelerator="Ctrl+S")
     filemenu.add_command(label="Save as...",
                          command=save_file_as, accelerator="Ctrl+Shift+S")
     filemenu.add_separator()
+    filemenu.add_command(label="run", command=run_code, accelerator="F5")
+    filemenu.add_separator()
     filemenu.add_command(label="Exit", command=root.quit)
     menubar.add_cascade(label="File", menu=filemenu)
 
-    # Создание выпадающего меню "Edit"
+    # Create the "Edit" drop-down menu
     editmenu = tk.Menu(menubar, tearoff=0)
     editmenu.add_command(label="Update Highlight",
                          command=changes, accelerator="Ctrl+Shift+P")
     menubar.add_cascade(label="Edit", menu=editmenu)
 
-    # Отображение меню
+    # Display the menu
     root.config(menu=menubar)
 
     changes()
@@ -253,4 +268,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

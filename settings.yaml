@@ -1,1 +1,4 @@
 font_style: Consolas 12 # Consolas 12 - default
+background_color: '#282828' # #282828 - default
+num_color: '#636363' # #636363 - default
+terminal: cmd /k # your terminal. example: cmd.exe /k - windows | gnome-terminal -- - linux | macos - idk sorry

@@ -10,12 +10,10 @@
 
 For **Open Snap Code** to work, the following components are required:
 
-- Python 3.10 (recommended)
+- Python 3.10+ (recommended)
 - pyyaml 6.0.1
 - TKinter
 - keyboard 0.13.5
-- re
-- ctypes
 
 ## Note
 
